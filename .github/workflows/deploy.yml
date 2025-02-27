@@ -1,0 +1,84 @@
+name: Continuous Delivery
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+jobs:
+  install-dependencies:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.merged == true
+    outputs:
+      cache-hit: ${{ steps.cache-dependencies.outputs.cache-hit }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Node.js modules
+        id: cache-dependencies
+        uses: actions/cache@v3
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - name: Install dependencies if cache missed
+        if: steps.cache-dependencies.outputs.cache-hit != 'true'
+        run: npm install
+
+  lint:
+    needs: install-dependencies
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.merged == true
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Node.js modules
+        uses: actions/cache@v3
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+
+      - name: Run linter
+        run: npm run lint
+
+  deploy:
+    needs: [install-dependencies, lint]
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.merged == true
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to Server using SCP
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          rm: true
+          source: '.'
+          target: ~/trading-room-telegram/
+          host: ${{ secrets.SERVER_HOST }}
+          port: ${{ secrets.SERVER_PORT }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          username: ${{ secrets.SERVER_USERNAME }}
+
+      - name: Executing remote ssh commands
+        uses: appleboy/ssh-action@v1.0.2
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          port: ${{ secrets.SERVER_PORT }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          envs: $SERVER_PATH
+          script: |
+            cd ~/trading-room-telegram
+            echo "TELEGRAM_API_ID=${{ secrets.TELEGRAM_API_ID }}" > .env
+            echo "TELEGRAM_API_HASH=${{ secrets.TELEGRAM_API_HASH }}" >> .env
+            echo "TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}" >> .env
+            echo "TELEGRAM_SESSION=${{ secrets.TELEGRAM_SESSION }}" >> .env
+            echo "TEST_GROUP_ID=${{ secrets.TEST_GROUP_ID }}" >> .env
+            echo "TRADING_ROOM_GROUP_ID=${{ secrets.TRADING_ROOM_GROUP_ID }}" >> .env
+            echo "MARKET_TWITS_CHANNEL_ID=${{ secrets.MARKET_TWITS_CHANNEL_ID }}" >> .env
+            docker-compose -f docker-compose.yml up -d --build
