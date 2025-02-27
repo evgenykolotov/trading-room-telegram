@@ -74,6 +74,7 @@ jobs:
           envs: $SERVER_PATH
           script: |
             cd ~/trading-room-telegram
+            docker-compose -f docker-compose.yml down
             echo "TELEGRAM_API_ID=${{ secrets.TELEGRAM_API_ID }}" > .env
             echo "TELEGRAM_API_HASH=${{ secrets.TELEGRAM_API_HASH }}" >> .env
             echo "TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}" >> .env
