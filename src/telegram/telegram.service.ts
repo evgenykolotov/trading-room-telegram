@@ -53,6 +53,7 @@ export class TelegramService implements OnModuleInit {
 
             if (message.text.toUpperCase().includes('КАЛЕНДАРЬ НА СЕГОДНЯ')) {
               await this.sendMessageToChannel(+TRADING_ROOM_GROUP_ID, message);
+              return;
             }
 
             if (
@@ -60,6 +61,20 @@ export class TelegramService implements OnModuleInit {
               this.RUSSIA_HASH_TAGS.some((tag) => hashtags.includes(tag))
             ) {
               await this.sendMessageToChannel(+TRADING_ROOM_GROUP_ID, message);
+              return;
+            }
+
+            if (hashtags.includes('геополитика')) {
+              await this.sendMessageToChannel(+TRADING_ROOM_GROUP_ID, message);
+              return;
+            }
+
+            if (
+              event.message.text.includes('🇷🇺') &&
+              hashtags.includes('отчетность')
+            ) {
+              await this.sendMessageToChannel(+TRADING_ROOM_GROUP_ID, message);
+              return;
             }
           }
         })();
