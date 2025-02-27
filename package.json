@@ -2,9 +2,12 @@
   "name": "trading-room-telegram",
   "version": "0.0.1",
   "description": "",
-  "author": "",
+  "author": {
+    "name": "Evgeny Kolotov",
+    "email": "evgenykolotov.dev@gmail.com"
+  },
   "private": true,
-  "license": "UNLICENSED",
+  "license": "MIT",
   "scripts": {
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
