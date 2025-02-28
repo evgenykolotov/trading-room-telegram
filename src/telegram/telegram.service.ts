@@ -53,6 +53,32 @@ export class TelegramService implements OnModuleInit {
       (event: NewMessageEvent) => {
         void (async () => {
           const message = event.message;
+          if (message.photo && message.text) {
+            const hashtags = this.extractHashtagsFromEntities(message);
+
+            if (
+              message.text.toUpperCase().includes('КАЛЕНДАРЬ НА СЕГОДНЯ') ||
+              hashtags.includes('календарь')
+            ) {
+              await this.sendPhotoToChannel(+TRADING_ROOM_GROUP_ID, message);
+              return;
+            }
+
+            if (
+              (event.message.text.includes('🇷🇺') ||
+                hashtags.includes('россия')) &&
+              this.RUSSIA_HASH_TAGS.some((tag) => hashtags.includes(tag))
+            ) {
+              await this.sendPhotoToChannel(+TRADING_ROOM_GROUP_ID, message);
+              return;
+            }
+
+            if (hashtags.includes('геополитика')) {
+              await this.sendPhotoToChannel(+TRADING_ROOM_GROUP_ID, message);
+              return;
+            }
+          }
+
           if (message.text) {
             const hashtags = this.extractHashtagsFromEntities(message);
 
@@ -101,9 +127,33 @@ export class TelegramService implements OnModuleInit {
         },
       );
       this.logger.log(`Сообщение отправлено в канал ${channelId}`);
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
-        `Ошибка при отправке сообщения в канал ${channelId}`,
+        `Ошибка при отправке текстового сообщения в канал ${channelId}`,
+        error,
+      );
+    }
+  }
+
+  private async sendPhotoToChannel(
+    channelId: number,
+    message: Api.Message,
+  ): Promise<void> {
+    try {
+      const media = await message.downloadMedia();
+      if (media instanceof Buffer) {
+        await this.bot.telegram.sendPhoto(
+          channelId,
+          { source: media },
+          {
+            caption: removeMarkdown(message.text),
+            caption_entities: convertEntities(message.entities ?? []),
+          },
+        );
+      }
+    } catch (error: unknown) {
+      this.logger.error(
+        `Ошибка при отправке сообщения c фото в канал ${channelId}`,
         error,
       );
     }
