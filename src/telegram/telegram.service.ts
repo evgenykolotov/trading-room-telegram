@@ -11,12 +11,17 @@ import { TelegramClientProvider } from './telegram-client.provider';
 export class TelegramService implements OnModuleInit {
   private readonly logger = new Logger(TelegramService.name);
   private readonly RUSSIA_HASH_TAGS = [
+    'fx',
     'дкп',
     'CBDC',
+    'RUB',
+    'сша',
+    'акции',
     'банки',
     'нефть',
     'макро',
     'торги',
+    'нфлоги',
     'спикеры',
     'соцсети',
     'санкции',
@@ -48,16 +53,46 @@ export class TelegramService implements OnModuleInit {
       (event: NewMessageEvent) => {
         void (async () => {
           const message = event.message;
+          if (message.photo && message.text) {
+            const hashtags = this.extractHashtagsFromEntities(message);
+
+            if (
+              message.text.toUpperCase().includes('КАЛЕНДАРЬ НА СЕГОДНЯ') ||
+              hashtags.includes('календарь')
+            ) {
+              await this.sendPhotoToChannel(+TRADING_ROOM_GROUP_ID, message);
+              return;
+            }
+
+            if (
+              (event.message.text.includes('🇷🇺') ||
+                hashtags.includes('россия')) &&
+              this.RUSSIA_HASH_TAGS.some((tag) => hashtags.includes(tag))
+            ) {
+              await this.sendPhotoToChannel(+TRADING_ROOM_GROUP_ID, message);
+              return;
+            }
+
+            if (hashtags.includes('геополитика')) {
+              await this.sendPhotoToChannel(+TRADING_ROOM_GROUP_ID, message);
+              return;
+            }
+          }
+
           if (message.text) {
             const hashtags = this.extractHashtagsFromEntities(message);
 
-            if (message.text.toUpperCase().includes('КАЛЕНДАРЬ НА СЕГОДНЯ')) {
+            if (
+              message.text.toUpperCase().includes('КАЛЕНДАРЬ НА СЕГОДНЯ') ||
+              hashtags.includes('календарь')
+            ) {
               await this.sendMessageToChannel(+TRADING_ROOM_GROUP_ID, message);
               return;
             }
 
             if (
-              hashtags.includes('россия') &&
+              (event.message.text.includes('🇷🇺') ||
+                hashtags.includes('россия')) &&
               this.RUSSIA_HASH_TAGS.some((tag) => hashtags.includes(tag))
             ) {
               await this.sendMessageToChannel(+TRADING_ROOM_GROUP_ID, message);
@@ -65,14 +100,6 @@ export class TelegramService implements OnModuleInit {
             }
 
             if (hashtags.includes('геополитика')) {
-              await this.sendMessageToChannel(+TRADING_ROOM_GROUP_ID, message);
-              return;
-            }
-
-            if (
-              event.message.text.includes('🇷🇺') &&
-              hashtags.includes('отчетность')
-            ) {
               await this.sendMessageToChannel(+TRADING_ROOM_GROUP_ID, message);
               return;
             }
@@ -100,9 +127,33 @@ export class TelegramService implements OnModuleInit {
         },
       );
       this.logger.log(`Сообщение отправлено в канал ${channelId}`);
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
-        `Ошибка при отправке сообщения в канал ${channelId}`,
+        `Ошибка при отправке текстового сообщения в канал ${channelId}`,
+        error,
+      );
+    }
+  }
+
+  private async sendPhotoToChannel(
+    channelId: number,
+    message: Api.Message,
+  ): Promise<void> {
+    try {
+      const media = await message.downloadMedia();
+      if (media instanceof Buffer) {
+        await this.bot.telegram.sendPhoto(
+          channelId,
+          { source: media },
+          {
+            caption: removeMarkdown(message.text),
+            caption_entities: convertEntities(message.entities ?? []),
+          },
+        );
+      }
+    } catch (error: unknown) {
+      this.logger.error(
+        `Ошибка при отправке сообщения c фото в канал ${channelId}`,
         error,
       );
     }
@@ -174,6 +225,42 @@ function convertEntities(entities: Api.TypeMessageEntity[]): MessageEntity[] {
           type: 'text_mention',
           user: { id: entity.userId },
         };
+      }
+
+      if (entity instanceof Api.MessageEntityUnderline) {
+        return { ...baseEntity, type: 'underline' };
+      }
+
+      if (entity instanceof Api.MessageEntityStrike) {
+        return { ...baseEntity, type: 'strikethrough' };
+      }
+
+      if (entity instanceof Api.MessageEntitySpoiler) {
+        return { ...baseEntity, type: 'spoiler' };
+      }
+
+      if (entity instanceof Api.MessageEntityCustomEmoji) {
+        return {
+          ...baseEntity,
+          type: 'custom_emoji',
+          custom_emoji_id: entity.documentId.toString(),
+        };
+      }
+
+      if (entity instanceof Api.MessageEntityBlockquote) {
+        return { ...baseEntity, type: 'blockquote' };
+      }
+
+      if (entity instanceof Api.MessageEntityBankCard) {
+        return { ...baseEntity, type: 'bank_card' };
+      }
+
+      if (entity instanceof Api.MessageEntityPhone) {
+        return { ...baseEntity, type: 'phone' };
+      }
+
+      if (entity instanceof Api.MessageEntityCashtag) {
+        return { ...baseEntity, type: 'cashtag' };
       }
 
       return null; // Игнорируем неизвестные сущности
