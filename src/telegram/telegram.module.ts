@@ -1,8 +1,9 @@
 import { Module } from '@nestjs/common';
-import { TelegramService } from './telegram.service';
-import { TelegramClientProvider } from './telegram-client.provider';
 import { TelegrafModule } from 'nestjs-telegraf';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { TelegramService } from './services/telegram.service';
+import { TelegramBotService } from './services/telegram-bot.service';
+import { TelegramClientProvider } from './providers/telegram-client.provider';
 
 @Module({
   imports: [
@@ -14,7 +15,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
       }),
     }),
   ],
-  providers: [TelegramClientProvider, TelegramService],
+  providers: [TelegramClientProvider, TelegramService, TelegramBotService],
   exports: [TelegramService],
 })
 export class TelegramModule {}
