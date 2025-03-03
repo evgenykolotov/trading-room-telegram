@@ -4,31 +4,11 @@ import { TelegramBotService } from './telegram-bot.service';
 import { NewMessage, NewMessageEvent } from 'telegram/events';
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { TelegramClientProvider } from '../providers/telegram-client.provider';
+import { removeMarkdown } from 'src/common/utils/remove-markdown.utils';
 
 @Injectable()
 export class TelegramService implements OnModuleInit {
   private readonly logger = new Logger(TelegramService.name);
-  private readonly RUSSIA_HASH_TAGS = [
-    'fx',
-    'дкп',
-    'CBDC',
-    'RUB',
-    'сша',
-    'акции',
-    'банки',
-    'нефть',
-    'макро',
-    'торги',
-    'нфлоги',
-    'спикеры',
-    'соцсети',
-    'санкции',
-    'прогноз',
-    'инфляция',
-    'отчетности',
-    'отчетность',
-    'геополитика',
-  ];
 
   constructor(
     private readonly configService: ConfigService,
@@ -55,27 +35,13 @@ export class TelegramService implements OnModuleInit {
 
           if (hashtags.length) {
             if (
-              message.text.toUpperCase().includes('КАЛЕНДАРЬ НА СЕГОДНЯ') ||
-              hashtags.includes('календарь')
+              hashtags.includes('россия') ||
+              hashtags.includes('календарь') ||
+              hashtags.includes('геополитика') ||
+              event.message.text.includes('🇷🇺') ||
+              event.message.text.includes('🇺🇦') ||
+              message.text.toUpperCase().includes('КАЛЕНДАРЬ НА СЕГОДНЯ')
             ) {
-              return this.telegramBotService.sendMessageToChannel(
-                +TRADING_ROOM_GROUP_ID,
-                message,
-              );
-            }
-
-            if (
-              (event.message.text.includes('🇷🇺') ||
-                hashtags.includes('россия')) &&
-              this.RUSSIA_HASH_TAGS.some((tag) => hashtags.includes(tag))
-            ) {
-              return this.telegramBotService.sendMessageToChannel(
-                +TRADING_ROOM_GROUP_ID,
-                message,
-              );
-            }
-
-            if (hashtags.includes('геополитика')) {
               return this.telegramBotService.sendMessageToChannel(
                 +TRADING_ROOM_GROUP_ID,
                 message,
@@ -96,7 +62,8 @@ export class TelegramService implements OnModuleInit {
     if (message.entities) {
       for (const entity of message.entities) {
         if (entity instanceof Api.MessageEntityHashtag) {
-          const hashtagText = message.text.substring(
+          const text: string = removeMarkdown(message.text);
+          const hashtagText = text.substring(
             entity.offset,
             entity.offset + entity.length,
           );
