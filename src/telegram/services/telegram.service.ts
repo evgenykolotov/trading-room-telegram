@@ -1,16 +1,23 @@
+import Redis from 'ioredis';
 import { Api } from 'telegram';
+import {
+  EditedMessage,
+  EditedMessageEvent,
+} from 'telegram/events/EditedMessage';
 import { ConfigService } from '@nestjs/config';
+import { InjectRedis } from '@nestjs-modules/ioredis';
 import { TelegramBotService } from './telegram-bot.service';
 import { NewMessage, NewMessageEvent } from 'telegram/events';
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { TelegramClientProvider } from '../providers/telegram-client.provider';
 import { removeMarkdown } from 'src/common/utils/remove-markdown.utils';
+import { TelegramClientProvider } from '../providers/telegram-client.provider';
 
 @Injectable()
 export class TelegramService implements OnModuleInit {
   private readonly logger = new Logger(TelegramService.name);
 
   constructor(
+    @InjectRedis() private readonly redis: Redis,
     private readonly configService: ConfigService,
     private readonly telegramBotService: TelegramBotService,
     private readonly telegramClientProvider: TelegramClientProvider,
@@ -42,15 +49,41 @@ export class TelegramService implements OnModuleInit {
               event.message.text.includes('🇺🇦') ||
               message.text.toUpperCase().includes('КАЛЕНДАРЬ НА СЕГОДНЯ')
             ) {
-              return this.telegramBotService.sendMessageToChannel(
-                +TRADING_ROOM_GROUP_ID,
-                message,
-              );
+              const sentMessage =
+                await this.telegramBotService.sendMessageToChannel(
+                  +TRADING_ROOM_GROUP_ID,
+                  message,
+                );
+
+              if (sentMessage) {
+                const key = `original_message_id:${message.id}`;
+                await this.redis.set(key, sentMessage.message_id, 'EX', 86400);
+              }
             }
           }
         })();
       },
       new NewMessage({ chats: [MARKET_TWITS_CHANNEL_ID] }),
+    );
+
+    client.addEventHandler(
+      (event: EditedMessageEvent) => {
+        void (async () => {
+          const editedMessage = event.message;
+          this.logger.log(`Сообщение отредактировано: ${editedMessage.text}`);
+          const sentMessageId = await this.redis.get(
+            `original_message_id:${editedMessage.id}`,
+          );
+          if (sentMessageId) {
+            await this.telegramBotService.editMessageToChannel(
+              +TRADING_ROOM_GROUP_ID,
+              +sentMessageId,
+              editedMessage,
+            );
+          }
+        })();
+      },
+      new EditedMessage({ chats: [MARKET_TWITS_CHANNEL_ID] }),
     );
 
     this.logger.log('Listening for new messages...');
