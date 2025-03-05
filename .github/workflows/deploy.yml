@@ -82,4 +82,6 @@ jobs:
             echo "TEST_GROUP_ID=${{ secrets.TEST_GROUP_ID }}" >> .env
             echo "TRADING_ROOM_GROUP_ID=${{ secrets.TRADING_ROOM_GROUP_ID }}" >> .env
             echo "MARKET_TWITS_CHANNEL_ID=${{ secrets.MARKET_TWITS_CHANNEL_ID }}" >> .env
+            echo "MARKET_TWITS_CHANNEL_ID=${{ secrets.REDIS_URL }}" >> .env
+            echo "MARKET_TWITS_CHANNEL_ID=${{ secrets.REDIS_PASSWORD }}" >> .env
             docker-compose -f docker-compose.yml up -d --build
