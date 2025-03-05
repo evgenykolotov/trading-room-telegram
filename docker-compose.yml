@@ -11,6 +11,8 @@ services:
       - REDIS_PASSWORD=${REDIS_PASSWORD}
     volumes:
       - redis_data:/data
+    networks:
+      - shared-network
     restart: unless-stopped
 
   telegram:
@@ -22,7 +24,13 @@ services:
       - NODE_ENV=production
     depends_on:
       - redis
+    networks:
+      - shared-network
     restart: unless-stopped
+
+networks:
+  shared-network:
+    external: true
 
 volumes:
   redis_data:
