@@ -74,7 +74,7 @@ jobs:
           envs: $SERVER_PATH
           script: |
             cd ~/trading-room-telegram
-            docker-compose -f docker-compose.yml down
+            docker-compose -f docker-compose.yml down -v
             docker network create --driver bridge shared-network || echo "Network already exists"
             echo "TELEGRAM_API_ID=${{ secrets.TELEGRAM_API_ID }}" > .env
             echo "TELEGRAM_API_HASH=${{ secrets.TELEGRAM_API_HASH }}" >> .env
@@ -83,6 +83,7 @@ jobs:
             echo "TEST_GROUP_ID=${{ secrets.TEST_GROUP_ID }}" >> .env
             echo "TRADING_ROOM_GROUP_ID=${{ secrets.TRADING_ROOM_GROUP_ID }}" >> .env
             echo "MARKET_TWITS_CHANNEL_ID=${{ secrets.MARKET_TWITS_CHANNEL_ID }}" >> .env
-            echo "MARKET_TWITS_CHANNEL_ID=${{ secrets.REDIS_URL }}" >> .env
-            echo "MARKET_TWITS_CHANNEL_ID=${{ secrets.REDIS_PASSWORD }}" >> .env
+            echo "REDIS_URL=${{ secrets.REDIS_URL }}" >> .env
+            echo "REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}" >> .env
             docker-compose -f docker-compose.yml up -d --build
+            docker exec redis redis-cli -a $REDIS_PASSWORD INFO replication
