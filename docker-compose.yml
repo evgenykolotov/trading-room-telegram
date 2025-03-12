@@ -9,6 +9,7 @@ services:
       - "6379:6379"
     environment:
       - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - REDIS_REPLICATION_MODE=master
     volumes:
       - redis_data:/data
     networks:
