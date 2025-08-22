@@ -122,7 +122,9 @@ export class TelegramService implements OnModuleInit {
     this.logger.log('TEST_GROUP_ID', this.configService.get(
       'TEST_GROUP_ID',
     ));
-    this.logger.log('TRADING_ROOM_GROUP_ID', TRADING_ROOM_GROUP_ID);
+    this.logger.log('TRADING_ROOM_GROUP_ID', this.configService.get(
+      'TRADING_ROOM_GROUP_ID',
+    ));
 
 
   }
