@@ -87,46 +87,6 @@ export class TelegramService implements OnModuleInit {
     );
 
     this.logger.log('Listening for new messages...');
-
-    this.logger.log('MARKET_TWITS_CHANNEL_ID', MARKET_TWITS_CHANNEL_ID);
-    this.logger.log('REDIS_PASSWORD', this.configService.get(
-      'REDIS_PASSWORD',
-    ));
-    this.logger.log('REDIS_URL', this.configService.get(
-      'REDIS_URL',
-    ));
-    this.logger.log('SERVER_HOST', this.configService.get(
-      'SERVER_HOST',
-    ));
-    this.logger.log('SERVER_PORT', this.configService.get(
-      'SERVER_PORT',
-    ));
-    this.logger.log('SERVER_USERNAME', this.configService.get(
-      'SERVER_USERNAME',
-    ));
-    this.logger.log('SSH_PRIVATE_KEY', this.configService.get(
-      'SSH_PRIVATE_KEY',
-    ));
-    this.logger.log('TELEGRAM_API_HASH', this.configService.get(
-      'TELEGRAM_API_HASH',
-    ));
-    this.logger.log('TELEGRAM_API_ID', this.configService.get(
-      'TELEGRAM_API_ID',
-    ));
-    this.logger.log('TELEGRAM_BOT_TOKEN', this.configService.get(
-      'TELEGRAM_BOT_TOKEN',
-    ));
-    this.logger.log('TELEGRAM_SESSION', this.configService.get(
-      'TELEGRAM_SESSION',
-    ));
-    this.logger.log('TEST_GROUP_ID', this.configService.get(
-      'TEST_GROUP_ID',
-    ));
-    this.logger.log('TRADING_ROOM_GROUP_ID', this.configService.get(
-      'TRADING_ROOM_GROUP_ID',
-    ));
-
-
   }
 
   private extractHashtagsFromEntities(message: Api.Message): string[] {
